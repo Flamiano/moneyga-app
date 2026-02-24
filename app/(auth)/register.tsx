@@ -42,7 +42,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  // 1. Loading State
+  // Loading State
   const [isLoading, setIsLoading] = useState(false);
 
   // Fonts
@@ -81,16 +81,14 @@ export default function RegisterScreen() {
 
     if (selectedDate) {
       setDate(selectedDate);
-      const formattedDate = `${
-        selectedDate.getMonth() + 1
-      }/${selectedDate.getDate()}/${selectedDate.getFullYear()}`;
+      const formattedDate = `${selectedDate.getMonth() + 1}/${selectedDate.getDate()}/${selectedDate.getFullYear()}`;
       setBirthDateText(formattedDate);
       setAge(calculateAge(selectedDate));
     }
   };
 
   const showPicker = () => {
-    if (isLoading) return; // Prevent picker while loading
+    if (isLoading) return;
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
         value: date,
@@ -99,21 +97,23 @@ export default function RegisterScreen() {
         maximumDate: new Date(),
       });
     } else {
-      setShowIosPicker(true);
+      setShowIosPicker(!showIosPicker);
     }
   };
 
   const handleRegister = async () => {
     const emailRegex = /\S+@\S+\.\S+/;
-    const passwordRegex =
-      /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
 
-    // 1. Validations First (Check these BEFORE starting the 3-second timer)
+    // 1. Validations
     if (!name || !email || !phone || !birthDateText || !password) {
       return Alert.alert("Error", "Please fill in all fields.");
     }
     if (!emailRegex.test(email)) {
       return Alert.alert("Error", "Enter a valid email.");
+    }
+    if (!passwordRegex.test(password)) {
+      return Alert.alert("Error", "Password must be at least 8 characters and include a number and special character.");
     }
     if (parseInt(age) < 16) {
       return Alert.alert("Error", "You must be 16+.");
@@ -122,21 +122,20 @@ export default function RegisterScreen() {
       return Alert.alert("Error", "Passwords don't match.");
     }
 
-    // 2. Start loading
     setIsLoading(true);
 
     try {
-      // 3. Wait for 3 seconds BEFORE calling Supabase
+      // Simulated Delay
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // 4. Now execute the Supabase Sign Up
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: 'https://moneyga.vercel.app/email-successful',
           data: {
             full_name: name,
-            phone: phone,
+            phone: `+63${phone}`,
             birthdate: birthDateText,
             age: parseInt(age),
           },
@@ -144,9 +143,6 @@ export default function RegisterScreen() {
       });
 
       if (error) throw error;
-
-      // 5. Success! Stop loading before showing Alert
-      setIsLoading(false);
 
       if (data) {
         Alert.alert(
@@ -156,25 +152,19 @@ export default function RegisterScreen() {
         );
       }
     } catch (error: any) {
-      // 6. Stop loading if it fails so the user can try again
-      setIsLoading(false);
       Alert.alert("Registration Failed", error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (!fontsLoaded)
+  if (!fontsLoaded) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#EFEBE4",
-        }}
-      >
+      <View style={styles.loadingCenter}>
         <ActivityIndicator size="large" color="#3A6B55" />
       </View>
     );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -195,11 +185,7 @@ export default function RegisterScreen() {
         <View style={styles.form}>
           {/* Full Name */}
           <View style={styles.inputWrapper}>
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={22}
-              color="#555"
-            />
+            <MaterialCommunityIcons name="account-outline" size={22} color="#555" />
             <TextInput
               style={styles.input}
               placeholder="Full Name"
@@ -211,11 +197,7 @@ export default function RegisterScreen() {
 
           {/* Email */}
           <View style={styles.inputWrapper}>
-            <MaterialCommunityIcons
-              name="email-outline"
-              size={22}
-              color="#555"
-            />
+            <MaterialCommunityIcons name="email-outline" size={22} color="#555" />
             <TextInput
               style={styles.input}
               placeholder="Email Address"
@@ -260,38 +242,18 @@ export default function RegisterScreen() {
               disabled={isLoading}
             >
               <MaterialCommunityIcons name="calendar" size={20} color="#555" />
-              <Text
-                style={[
-                  styles.input,
-                  { color: birthDateText ? "#333" : "#999", marginTop: 15 },
-                ]}
-              >
+              <Text style={[styles.textValue, { color: birthDateText ? "#333" : "#999" }]}>
                 {birthDateText || "Birthdate"}
               </Text>
             </TouchableOpacity>
 
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  flex: 1,
-                  backgroundColor: "#E0E0E0",
-                  justifyContent: "center",
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.input,
-                  { textAlign: "center", marginLeft: 0, marginTop: 15 },
-                ]}
-              >
+            <View style={[styles.inputWrapper, { flex: 1, backgroundColor: "#E0E0E0" }]}>
+              <Text style={[styles.textValue, { textAlign: "center", marginLeft: 0 }]}>
                 {age || "Age"}
               </Text>
             </View>
           </View>
 
-          {/* iOS Picker Modal */}
           {Platform.OS === "ios" && showIosPicker && (
             <DateTimePicker
               value={date}
@@ -304,11 +266,7 @@ export default function RegisterScreen() {
 
           {/* Password */}
           <View style={styles.inputWrapper}>
-            <MaterialCommunityIcons
-              name="lock-outline"
-              size={22}
-              color="#555"
-            />
+            <MaterialCommunityIcons name="lock-outline" size={22} color="#555" />
             <TextInput
               style={styles.input}
               placeholder="Password"
@@ -317,10 +275,7 @@ export default function RegisterScreen() {
               secureTextEntry={!isPasswordVisible}
               editable={!isLoading}
             />
-            <TouchableOpacity
-              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              disabled={isLoading}
-            >
+            <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
               <MaterialCommunityIcons
                 name={isPasswordVisible ? "eye" : "eye-off"}
                 size={22}
@@ -331,11 +286,7 @@ export default function RegisterScreen() {
 
           {/* Confirm Password */}
           <View style={styles.inputWrapper}>
-            <MaterialCommunityIcons
-              name="lock-check-outline"
-              size={22}
-              color="#555"
-            />
+            <MaterialCommunityIcons name="lock-check-outline" size={22} color="#555" />
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
@@ -346,7 +297,6 @@ export default function RegisterScreen() {
             />
           </View>
 
-          {/* 4. Dynamic SIGN UP Button */}
           <TouchableOpacity
             style={[styles.button, isLoading && { opacity: 0.8 }]}
             onPress={handleRegister}
@@ -354,11 +304,7 @@ export default function RegisterScreen() {
           >
             {isLoading ? (
               <View style={styles.buttonContent}>
-                <ActivityIndicator
-                  size="small"
-                  color="#fff"
-                  style={{ marginRight: 10 }}
-                />
+                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 10 }} />
                 <Text style={styles.buttonText}>SIGNING UP...</Text>
               </View>
             ) : (
@@ -382,21 +328,11 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#EFEBE4" },
+  loadingCenter: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#EFEBE4" },
   scrollContainer: { padding: 25, alignItems: "center", paddingBottom: 50 },
-  logoImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginTop: 40,
-    marginBottom: 15,
-  },
+  logoImage: { width: 80, height: 80, borderRadius: 40, marginTop: 40, marginBottom: 15 },
   title: { fontSize: 24, fontFamily: "Poppins-Bold", color: "#3A6B55" },
-  subtitle: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 20,
-    fontFamily: "Poppins-Regular",
-  },
+  subtitle: { fontSize: 14, color: "#666", marginBottom: 20, fontFamily: "Poppins-Regular" },
   form: { width: "100%", gap: 12 },
   row: { flexDirection: "row" },
   inputWrapper: {
@@ -414,6 +350,12 @@ const styles = StyleSheet.create({
     color: "#333",
     marginLeft: 10,
   },
+  textValue: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    marginLeft: 10,
+  },
   button: {
     backgroundColor: "#3A6B55",
     padding: 16,
@@ -423,11 +365,7 @@ const styles = StyleSheet.create({
     height: 55,
     justifyContent: "center",
   },
-  buttonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  buttonContent: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
   prefixContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -436,17 +374,8 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     marginRight: 5,
   },
-  flagIcon: {
-    width: 24,
-    height: 16,
-    borderRadius: 2,
-    marginRight: 8,
-  },
-  prefixText: {
-    fontSize: 16,
-    fontFamily: "Poppins-Medium",
-    color: "#333",
-  },
+  flagIcon: { width: 24, height: 16, borderRadius: 2, marginRight: 8 },
+  prefixText: { fontSize: 16, fontFamily: "Poppins-Medium", color: "#333" },
   buttonText: { color: "#fff", fontSize: 16, fontFamily: "Poppins-Bold" },
   footer: { flexDirection: "row", marginTop: 20, marginBottom: 20 },
   footerText: { color: "#666", fontFamily: "Poppins-Regular" },

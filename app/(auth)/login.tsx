@@ -28,8 +28,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-
-  // 1. Added loading state
   const [isLoading, setIsLoading] = useState(false);
 
   // Fonts
@@ -44,16 +42,12 @@ export default function LoginScreen() {
       return Alert.alert("Error", "Please fill in all fields.");
     }
 
-    // 2. Start loading and set a 3-second delay
     setIsLoading(true);
 
-    // Create a promise that resolves after 3 seconds
+    // Artificial delay to show loading state (as per your original logic)
     const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
     try {
-      // Execute both the 3-second wait and the Supabase call
-      // We use Promise.all if you want them to finish together,
-      // or just await the delay first to guarantee the 3 seconds.
       await delay(3000);
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -63,7 +57,7 @@ export default function LoginScreen() {
 
       if (error) {
         if (error.message.includes("Email not confirmed")) {
-          setIsLoading(false); // Stop loading on error
+          setIsLoading(false);
           return Alert.alert(
             "Email Not Verified",
             "Please check your inbox and verify your email before logging in."
@@ -74,17 +68,14 @@ export default function LoginScreen() {
 
       if (data.session) {
         console.log("Login successful!");
-        // We don't necessarily need to set isLoading(false) here
-        // because router.replace will unmount the screen
         router.replace("/(tabs)/dashboard");
       }
     } catch (error: any) {
-      setIsLoading(false); // 3. Stop loading if login fails
+      setIsLoading(false);
       Alert.alert("Login Failed", error.message);
     }
   };
 
-  // Loader if fonts aren't ready yet
   if (!fontsLoaded) {
     return (
       <View
@@ -131,7 +122,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              editable={!isLoading} // Disable input while loading
+              editable={!isLoading}
             />
           </View>
 
@@ -150,7 +141,7 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
-              editable={!isLoading} // Disable input while loading
+              editable={!isLoading}
             />
             <TouchableOpacity
               onPress={() => setIsPasswordVisible(!isPasswordVisible)}
@@ -163,15 +154,11 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.forgotPassword} disabled={isLoading}>
-            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          {/* 4. Dynamic Button Content */}
+          {/* Login Button */}
           <TouchableOpacity
             style={[styles.button, isLoading && { opacity: 0.8 }]}
             onPress={handleLogin}
-            disabled={isLoading} // Prevent double-clicks
+            disabled={isLoading}
           >
             {isLoading ? (
               <View style={styles.buttonContent}>
@@ -241,12 +228,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Regular",
     color: "#333",
   },
-  forgotPassword: { alignSelf: "flex-end", marginBottom: 10 },
-  forgotPasswordText: {
-    color: "#3A6B55",
-    fontFamily: "Poppins-Medium",
-    fontSize: 14,
-  },
   button: {
     backgroundColor: "#3A6B55",
     padding: 18,
@@ -259,7 +240,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  }, // Layout for loader + text
+  },
   buttonText: {
     color: "#fff",
     fontSize: 18,
